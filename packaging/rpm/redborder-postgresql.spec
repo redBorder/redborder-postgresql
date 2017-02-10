@@ -24,6 +24,9 @@ chmod 0755 %{buildroot}/usr/lib/redborder/bin/*
 
 %pre
 
+%post
+/usr/lib/redborder/bin/rb_rubywrapper.sh -c
+
 %files
 %defattr(0755,root,root)
 /usr/lib/redborder/bin
