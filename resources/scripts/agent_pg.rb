@@ -26,16 +26,20 @@ else
 	}
 end
 
+begin
 
+	agent.bootstrap
+	agent.consul_connect
+	unless agent.master?
+		agent.slave_bootstrap
+	end
+	agent.checks
 
-if conf["bootstrap"]
-	# bootstrap process
-	bootstrap(conf)
+rescue
+
+ensure
+
 end
-
-# Now it is time to wait for consul
-
-wait_consul
 
 
 
