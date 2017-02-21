@@ -15,8 +15,8 @@ class AgentPG
     def initialize()
         @conf = {}
         @default_conf = {
-        	"pgdata" 	=> "/var/lib/psql/9.6/data",
-        	"unitfile" 	=> "postgresql-9.6",
+        	"pgdata" 	=> "/var/lib/psql/data",
+        	"unitfile" 	=> "postgresql",
         	"database" 	=> "postgres",
         	"user" 		=> "postgres",
         	"master_kv" => "postgresql/master"
@@ -108,6 +108,26 @@ class AgentPG
 
 	def poolchecks
 
+
+
 	end
 
 end
+
+# Connection example to database, and executin select that only works if it is master
+#begin
+#    con = PG.connect :dbname => conf["database"], :user => conf["user"], :host => "127.0.0.1"
+#rescue PG::Error => e
+#    puts "Error connecting to PostgreSQL via localhost, user #{conf["user"]}"
+#    exit(1)
+#end
+#res = con.exec("SELECT pg_current_xlog_location();")
+
+# Check if it is slave or master with database stopped
+#if File.file?("#{conf["pgdata"]}/recovery.conf")
+#        # file recovery.conf exist, slave configuration
+#        conf["mode"]="slave"
+#else
+#        conf["mode"]="master"
+#end
+
