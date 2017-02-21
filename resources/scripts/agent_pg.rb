@@ -8,74 +8,21 @@ require 'yaml'
 require 'pg'
 require "#{ENV['RBLIB']}/agent_pg_lib.rb"
 
-CONFFILE = "/etc/redborder/agent_pg.yml"
+#TODO: get CONFFILE path from stdin
+conf_file = "/etc/redborder/agent_pg.yml"
 
 agent = AgentPG.new
-
-if File.file?(CONFFILE)
-	agent.conf = YAML.load:file(CONFFILE)
-else
-	# default values
-	agent.conf = {
-		"pgdata" => "/var/lib/pgsql/9.6/data",
-		"unitfile" => "postgresql-9.6",
-		"database" => "postgres",
-		"user" => "postgres",
-		"password" => "",
-		"bootstrap" => false
-	}
-end
-
 begin
-
-	agent.bootstrap
+	agent.config_from_file(conf_file)
+	agent.master_bootstrap
 	agent.consul_connect
-	unless agent.master?
-		agent.slave_bootstrap
-	end
-	agent.checks
+	agent.slave_bootstrap if !agent.master?
+
+	agent.checks_registration
+
 
 rescue
 
 ensure
 
-end
-
-
-
-
-
-
-
-
-
-
-
-
-exit 0
-
-# Starting directly when the DB is configured
-# no initdb is necessary by now
-
-# first check if postgres has been started out-of-the-box
-# If it has been started, check if I am master via select, else via conf
-
-if system("systemctl status #{conf["unitfile"]}")
-	# Note: exit code 0 (true) means service is up, other values means fialed, inactive, or other status
-	# Service postgres is up and running? -> connect and request
-	begin
-		con = PG.connect :dbname => conf["database"], :user => conf["user"], :host => "127.0.0.1"
-	rescue PG::Error => e
-		puts "Error connecting to PostgreSQL via localhost, user #{conf["user"]}"
-		exit(1)
-	end
-	res = con.exec("SELECT pg_current_xlog_location();")
-else
-	if File.file?("#{conf["pgdata"]}/recovery.conf")
-		# file recovery.conf exist, slave configuration
-		conf["mode"]="slave"
-	else
-		conf["mode"]="master"
-	end
-	# start service?
 end
