@@ -5,25 +5,27 @@ class AgentPGExeption < StandardError
 end
 
 class AgentPG
-	require 'yaml'
-	require 'logger'
-	require 'redborder-consul-connector'
-	#require 'pg'
+    require 'yaml'
+    require 'logger'
+    require 'redborder-consul-connector'
+    #require 'pg'
 
     attr_accessor :conf
 
     def initialize()
         @conf = {}
         @default_conf = {
-        	"pgdata" 	=> "/var/lib/psql/data",
-        	"unitfile" 	=> "postgresql",
-        	"database" 	=> "postgres",
-        	"user" 		=> "postgres",
-        	"master_kv" => "postgresql/master"
-        	"master_ttl" => "60s" 
-        	"password"	=> "",
-        	"bootstrap" => false,
-        	"log_level" => Logger::WARN
+            "pgdata"    => "/var/lib/psql/data",
+            "unitfile"  => "postgresql",
+            "database"  => "postgres",
+            "user"      => "postgres",
+            "master_kv" => "postgresql/master"
+            "master_ttl" => "60s"
+            "master_check_script_path" => ""
+            "check_script_path" => ""
+            "password"  => "",
+            "bootstrap" => false,
+            "log_level" => Logger::WARN
         }
 
         @logger = Logger.new(STDOUT)
@@ -32,85 +34,83 @@ class AgentPG
 
     end
 
-	###########################################
-	# CONFIGURATION MANAGEMENT METHODS
-	###########################################
-	
-	def config_from_yaml(path = "")
-		config_hash = {}
-		config_hash = YAML.load_file(path) if File.file?(path)
-		config_from_hash(config_hash)		
-	end
+    ###########################################
+    # CONFIGURATION MANAGEMENT METHODS
+    ###########################################
+    
+    def config_from_yaml(path = "")
+        config_hash = {}
+        config_hash = YAML.load_file(path) if File.file?(path)
+        config_from_hash(config_hash)       
+    end
 
-	def config_from_hash(hash)
-		@default_conf.each_key { |key|
-			config_set(key, hash)
-		}
-		@logger.level = @conf["log_level"]
-	end
+    def config_from_hash(hash)        
+        @default_conf.each_key { |key|
+            config_set(key, hash)
+        }
+        @logger.level = @conf["log_level"]
+    end
 
-	def config_set(key, hash)
-		hash.has_key?(key) ? (@conf[key] = hash[key]) : (@conf[key] = @default_conf[key])
-	end
+    def config_set(key, hash)
+        hash.has_key?(key) ? (@conf[key] = hash[key]) : (@conf[key] = @default_conf[key])
+    end
 
-	###########################################
-	# BOOTSTRAP MANAGEMENT METHODS
-	###########################################
+    ###########################################
+    # BOOTSTRAP MANAGEMENT METHODS
+    ###########################################
 
-	def master_bootstrap
-		@logger.debug("Execute master_bootstrap")
-		if @conf["bootstrap"]
-			#TODO!!!
-			System("systemctl postgresql start")
-		end
-	end
+    def master_bootstrap
+        @logger.debug("Execute master_bootstrap")
+        if @conf["bootstrap"]
+            #TODO!!!
+            #system("systemctl postgresql start")
 
-	def slave_bootstrap
-		#TODO!!!
-		@logger.debug("Execute slave_bootstrap")
-		System("systemctl postgresql start")
-	end
+        end
+    end
 
-	###########################################
-	# CONSUL WAITING METHODS
-	###########################################
+    def slave_bootstrap
+        #TODO!!!
+        @logger.debug("Execute slave_bootstrap")
+        #system("systemctl postgresql start")
+    end
 
-	def consul_connect
-		@logger.debug("Execute consul_connect")
-		@consul.wait_for_connectivity
+    ###########################################
+    # CONSUL WAITING METHODS
+    ###########################################
 
-		EXIT = false
-		until EXIT
-			if @consul.get_kv_value(@config["master_kv"]).nil?
-				if @config["bootstrap"]
-					@consul.leader_election(@config["master_kv"], @config["master_ttl"])
-					EXIT = true
-				else
-					sleep 10
-				end
-			else
-				EXIT = true
-			end
-		end
-	end
+    def consul_connect
+        @logger.debug("Execute consul_connect")
 
-	def master?
-		return @consul.leader?(@config["master_kv"])
-	end
+        @logger.debug("Waiting for consul connectivity...")        
+        @consul.wait_for_connectivity
 
-	def wait_consul
+        EXIT = false
+        until EXIT
+            if @consul.get_kv_value(@config["master_kv"]).nil?
+                if @config["bootstrap"]
+                    @consul.leader_election(@config["master_kv"], @config["master_ttl"])
+                    EXIT = true
+                else
+                    sleep 10
+                end
+            else
+                EXIT = true
+            end
+        end
+    end
 
-	end
+    def master?
+        @logger.debug("Execute master?")
+        return @consul.leader?(@config["master_kv"])
+    end
 
-	def checks
+    def checks_registration
+        @consul.register_check_script()
+    end
 
-	end
+    def poolchecks
 
-	def poolchecks
-
-
-
-	end
+    end
 
 end
 
