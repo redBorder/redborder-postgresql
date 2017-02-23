@@ -5,11 +5,15 @@
 # integration with consul and Master-MultiSlave
 
 require 'yaml'
-require 'pg'
-require "#{ENV['RBLIB']}/agent_pg_lib.rb"
+#require 'pg'
+#require_relative "../lib/agent_pg_lib.rb"
 
 #TODO: get CONFFILE path from stdin
-conf_file = "/etc/redborder/agent_pg.yml"
+if ARGV[0].nil? 
+	conf_file = "/etc/redborder/agent_pg.yml"
+else
+	conf_file = ARGV[0]
+end
 
 agent = AgentPG.new
 begin
@@ -17,11 +21,10 @@ begin
 	agent.master_bootstrap
 	agent.consul_connect
 	agent.slave_bootstrap if !agent.master?
-	agent.checks_registration
-
-
+	#agent.checks_registration
 rescue
 
 ensure
 
 end
+

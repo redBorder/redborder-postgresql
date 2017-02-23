@@ -15,17 +15,18 @@ class AgentPG
     def initialize()
         @conf = {}
         @default_conf = {
-            "pgdata"    => "/var/lib/psql/data",
+            "pgdata"    => "/var/lib/pgsql/data",
             "unitfile"  => "postgresql",
             "database"  => "postgres",
             "user"      => "postgres",
-            "master_kv" => "postgresql/master"
-            "master_ttl" => "60s"
-            "master_check_script_path" => ""
-            "check_script_path" => ""
-            "password"  => "",
+            "password"  => "redborder",
+            "service_name" => "postgresql",     
+            "master_kv" => "postgresql/master",
+            "master_ttl" => "60s",
+            "master_check_script_path" => "/usr/lib/redborder-postgresql/bin/pg_master_health_check.sh",
+            "check_script_path" => "/usr/lib/redborder-postgresql/bin/pg_health_check.sh",
             "bootstrap" => false,
-            "log_level" => Logger::WARN
+            "log_level" => Logger::INFO
         }
 
         @logger = Logger.new(STDOUT)
@@ -105,7 +106,25 @@ class AgentPG
     end
 
     def checks_registration
-        @consul.register_check_script()
+        node_name = @consul.get_self()["Config"]["NodeName"]
+        
+        #Master check registration
+        if master?
+            @consul.register_check_script(
+                "#{node_name}-#{@config["master_service_name"]}-check",
+                @config["master_service_name"]},
+                "#{node_name}-#{@config["service_name"]}",
+                @config["master_check_script_path"],
+                "30s",
+                "60s"
+            )
+        end
+
+        #Common check registration
+        @consul.register_check_script(
+            "#{node_name}-#{@config}"
+        )
+
     end
 
     def poolchecks
