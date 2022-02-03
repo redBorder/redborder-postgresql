@@ -2,11 +2,11 @@
 
 class Poll
 
-	require 'consul-connector.rb'
+	require 'redborder-consul-connector'
 
 	def initialize(master_key = "postgresql/master", master_ttl = "60s"
 			service_name = "postgresql", master_service_name = "postgresql-master")
-		@consul = Consul_connector.new
+		@consul = RedborderConsulConnector.new
 		@master_key = master_key
 		@master_ttl = master_ttl
 		@service_name = service_name
@@ -91,6 +91,7 @@ class Poll
 	def stop_services()
 
 	end
+
 
 	def get_current_master()
 		return @consul.get_current_leader(@master_key)

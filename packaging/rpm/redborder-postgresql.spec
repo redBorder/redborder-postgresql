@@ -19,8 +19,17 @@ Requires: bash redborder-rubyrvm redborder-common
 %build
 
 %install
+mkdir -p %{buildroot}/usr/lib/redborder/bin
+mkdir -p %{buildroot}/usr/lib/redborder/scripts
+mkdir -p %{buildroot}/usr/lib/redborder/lib
+
 cp resources/bin/* %{buildroot}/usr/lib/redborder/bin
+cp resources/scripts/* %{buildroot}/usr/lib/redborder/scripts
+
 chmod 0755 %{buildroot}/usr/lib/redborder/bin/*
+chmod 0755 %{buildroot}/usr/lib/redborder/scripts/*
+
+install -D -m 0644 resources/lib/agent_pg_lib.rb %{buildroot}/usr/lib/redborder/lib
 
 %pre
 
@@ -30,6 +39,9 @@ chmod 0755 %{buildroot}/usr/lib/redborder/bin/*
 %files
 %defattr(0755,root,root)
 /usr/lib/redborder/bin
+/usr/lib/redborder/scripts
+%defattr(0644,root,root)
+/usr/lib/redborder/lib/agent_pg_lib.rb
 
 %doc
 
