@@ -31,7 +31,7 @@ chmod 0755 %{buildroot}/usr/lib/redborder/scripts/*
 
 install -D -m 0644 resources/lib/poll_lib.rb %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/lib/agent_pg_lib.rb %{buildroot}/usr/lib/redborder/lib
-install -D -m 644 redborder-postgresql.service %{buildroot}/usr/lib/systemd/system/redborder-postgresql.service
+install -D -m 644 resources/systemd/redborder-postgresql.service %{buildroot}/usr/lib/systemd/system/redborder-postgresql.service
 
 
 %pre
