@@ -1,0 +1,11 @@
+[Unit]
+Description=redborder-postgresql
+
+[Service]
+User=root
+ExecStart=/usr/lib/redborder/bin/agent_pg
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

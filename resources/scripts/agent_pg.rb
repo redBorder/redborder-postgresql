@@ -8,6 +8,9 @@ require 'yaml'
 #require 'pg'
 #require_relative "../lib/agent_pg_lib.rb"
 
+require '/usr/lib/redborder/lib/agent_pg_lib.rb'
+require '/usr/lib/redborder/lib/poll_lib.rb'
+
 #TODO: get CONFFILE path from stdin
 if ARGV[0].nil? 
 	conf_file = "/etc/redborder/agent_pg.yml"
@@ -16,15 +19,18 @@ else
 end
 
 agent = AgentPG.new
-begin
+
+#begin
 	agent.config_from_yaml(conf_file)
 	agent.master_bootstrap
 	agent.consul_connect
 	agent.slave_bootstrap if !agent.master?
 	agent.checks_registration
-rescue
+	agent.pollchecks
+#rescue 
+#  puts "Error"
 
-ensure
+#ensure
 
-end
+#end
 
