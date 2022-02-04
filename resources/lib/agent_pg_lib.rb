@@ -20,17 +20,18 @@ class AgentPG
             "database"  => "postgres",
             "user"      => "postgres",
             "password"  => "redborder",
-            "service_name" => "postgresql",     
+            "service_name" => "postgresql",
+            "master_service_name" => "postgresql-master",
             "master_kv" => "postgresql/master",
             "master_ttl" => "60s",
-            "master_check_script_path" => "/usr/lib/redborder-postgresql/bin/pg_master_health_check.sh",
-            "check_script_path" => "/usr/lib/redborder-postgresql/bin/pg_health_check.sh",
+            "master_check_script_path" => "/usr/lib/redborder/bin/pg_master_health_check.sh",
+            "check_script_path" => "/usr/lib/redborder/bin/pg_health_check.sh",
             "bootstrap" => false,
             "log_level" => Logger::INFO
         }
 
         @logger = Logger.new(STDOUT)
-        @consul = Consul_connector.new
+        @consul = RedborderConsulConnector.new
         config_from_hash(@default_conf)
 
     end
@@ -85,17 +86,22 @@ class AgentPG
         @logger.debug("Waiting for consul connectivity...")        
         @consul.wait_for_connectivity
 
-        EXIT = false
-        until EXIT
+        need_to_exit = false
+        until need_to_exit
             if @consul.get_kv_value(@config["master_kv"]).nil?
                 if @config["bootstrap"]
                     @consul.leader_election(@config["master_kv"], @config["master_ttl"])
-                    EXIT = true
+                    need_to_exit = true
+                    if master?
+                        master_promotion
+                    else
+                        resync_with_master
+                    end
                 else
                     sleep 10
                 end
             else
-                EXIT = true
+                need_to_exit = true
             end
         end
     end
@@ -110,26 +116,61 @@ class AgentPG
         
         #Master check registration
         if master?
+            # params: id,name, service_id, script_path, interval, deregister_ttl
             @consul.register_check_script(
-                "#{node_name}-#{@config["master_service_name"]}-check",
-                @config["master_service_name"]},
-                "#{node_name}-#{@config["service_name"]}",
-                @config["master_check_script_path"],
-                "30s",
+                "#{@config["master_service_name"]}-#{node_name}-check", 
+                "#{@config["master_service_name"]}",
+                "#{@config["service_name"]}-#{node_name}", 
+                @config["master_check_script_path"], 
+                "30s", 
                 "60s"
             )
         end
 
         #Common check registration
         @consul.register_check_script(
-            "#{node_name}-#{@config}"
+            "#{@config["service_name"]}-#{node_name}-check", 
+            "#{@config["service_name"]}",
+            "#{@config["service_name"]}-#{node_name}", 
+            @config["check_script_path"], 
+            "30s", 
+            "60s"
         )
 
     end
 
-    def poolchecks
-
+    def pollchecks
     end
+
+    def master_promotion()
+		#TODO
+		#Delete master service (catalog) | TODO: check if this is really needed
+		#Register new master service (agent) | TODO: check if this is really needed
+
+        #TODO: Check if we need to delete the old master check
+
+		#Register check for master service
+        @consul.register_check_script(
+                "#{@config["master_service_name"]}-#{node_name}-check", 
+                "#{@config["master_service_name"]}",
+                "#{@config["service_name"]}-#{node_name}", 
+                @config["master_check_script_path"], 
+                "30s", 
+                "60s"
+            )
+
+		#promotion psql
+        system("touch /tmp/postgresql.trigger")
+	end
+
+	def resync_with_master()
+		#TODO
+		#Wait master to be ok
+
+        #Resync with new master
+        
+
+	end
 
 end
 

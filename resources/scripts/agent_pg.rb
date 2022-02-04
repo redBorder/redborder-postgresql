@@ -17,11 +17,11 @@ end
 
 agent = AgentPG.new
 begin
-	agent.config_from_file(conf_file)
+	agent.config_from_yaml(conf_file)
 	agent.master_bootstrap
 	agent.consul_connect
 	agent.slave_bootstrap if !agent.master?
-	#agent.checks_registration
+	agent.checks_registration
 rescue
 
 ensure
