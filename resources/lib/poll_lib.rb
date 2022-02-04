@@ -89,7 +89,7 @@ class Poll
 	end
 
 	def stop_services()
-
+		system("systemctl stop postgresql")
 	end
 
 
@@ -98,19 +98,19 @@ class Poll
 	end
 
 	def get_pg_service_id()
-		return "#{@node_name}-#{@service_name}"
+		return "#{@service_name}-#{@node_name}"
 	end
 
 	def get_pg_master_service_id()
-		return "#{@node_name}-#{@master_service_name}"
+		return "#{@master_service_name}-#{@node_name}"
 	end
 
 	def get_pg_check_id()
-		return "#{@node_name}-#{@service_name}-check"
+		return "#{@service_name}-#{@node_name}-check"
 	end
 
 	def get_pg_master_check_id()
-		return "#{@node_name}-#{@master_service_name}-check"
+		return "#{@master_service_name}-#{@node_name}-check"
 	end
 
 	def delete_master_service()
@@ -123,12 +123,19 @@ class Poll
 		#Register new master service (agent)
 		#Register check for master service
 		#promotion psql		
+
+		system("touch /tmp/postgresql.trigger")
 	end
 
 	def resync_with_master()
 		#TODO
 		#Wait master to be ok
+		while !psql_master_check_status
+			sleep 10
+		end
 		#Resync with new master
+		system("/usr/lib/redborder/bin/rb_sync_from_master.sh")
+		
 	end
 
 end

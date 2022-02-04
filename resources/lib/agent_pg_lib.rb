@@ -8,6 +8,7 @@ class AgentPG
     require 'yaml'
     require 'logger'
     require 'redborder-consul-connector'
+    require '/usr/lib/redborder/lib/poll_lib.rb'
     #require 'pg'
 
     attr_accessor :conf
@@ -92,11 +93,6 @@ class AgentPG
                 if @config["bootstrap"]
                     @consul.leader_election(@config["master_kv"], @config["master_ttl"])
                     need_to_exit = true
-                    if master?
-                        master_promotion
-                    else
-                        resync_with_master
-                    end
                 else
                     sleep 10
                 end
@@ -140,37 +136,9 @@ class AgentPG
     end
 
     def pollchecks
+        poller = Poll.new
+        poller.polling_process(60)
     end
-
-    def master_promotion()
-		#TODO
-		#Delete master service (catalog) | TODO: check if this is really needed
-		#Register new master service (agent) | TODO: check if this is really needed
-
-        #TODO: Check if we need to delete the old master check
-
-		#Register check for master service
-        @consul.register_check_script(
-                "#{@config["master_service_name"]}-#{node_name}-check", 
-                "#{@config["master_service_name"]}",
-                "#{@config["service_name"]}-#{node_name}", 
-                @config["master_check_script_path"], 
-                "30s", 
-                "60s"
-            )
-
-		#promotion psql
-        system("touch /tmp/postgresql.trigger")
-	end
-
-	def resync_with_master()
-		#TODO
-		#Wait master to be ok
-
-        #Resync with new master
-        
-
-	end
 
 end
 
