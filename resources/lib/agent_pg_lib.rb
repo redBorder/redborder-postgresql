@@ -27,8 +27,8 @@ class AgentPG
             "master_ttl" => "60s",
             "master_check_script_path" => "/usr/lib/redborder/bin/pg_master_health_check.sh",
             "check_script_path" => "/usr/lib/redborder/bin/pg_health_check.sh",
-            "bootstrap" => false,
-            "log_level" => Logger::INFO
+            "bootstrap" => true,
+            "log_level" => Logger::DEBUG
         }
 
         @logger = Logger.new(STDOUT)
@@ -89,14 +89,19 @@ class AgentPG
 
         need_to_exit = false
         until need_to_exit
-            if @consul.get_kv_value(@config["master_kv"]).nil?
-                if @config["bootstrap"]
-                    @consul.leader_election(@config["master_kv"], @config["master_ttl"])
+            if @consul.get_kv_value(@conf["master_kv"]).nil?
+                @logger.debug("There is no master key...")        
+                if @conf["bootstrap"]
+                    @logger.debug("Bootstrap is true so lets leader election...")        
+                    election_result = @consul.leader_election(@conf["master_kv"], @conf["master_ttl"])
+                    @logger.debug("Election result: #{election_result} with master_kv: #{@conf['master_kv']} and master_ttl: #{@conf['master_ttl']}")        
+                      
                     need_to_exit = true
                 else
                     sleep 10
                 end
             else
+                @logger.debug("There is master key so I exit...")        
                 need_to_exit = true
             end
         end
@@ -104,31 +109,34 @@ class AgentPG
 
     def master?
         @logger.debug("Execute master?")
-        return @consul.leader?(@config["master_kv"])
+        return @consul.leader?(@conf["master_kv"])
     end
 
     def checks_registration
         node_name = @consul.get_self()["Config"]["NodeName"]
         
+        @logger.debug("Calling checks_registration, node_name is #{node_name}")
         #Master check registration
         if master?
+            @logger.debug("Calling @consul.register_check_script (master)")
             # params: id,name, service_id, script_path, interval, deregister_ttl
             @consul.register_check_script(
-                "#{@config["master_service_name"]}-#{node_name}-check", 
-                "#{@config["master_service_name"]}",
-                "#{@config["service_name"]}-#{node_name}", 
-                @config["master_check_script_path"], 
+                "#{@conf["master_service_name"]}-#{node_name}-check", 
+                "#{@conf["master_service_name"]}",
+                "#{@conf["service_name"]}-#{node_name}", 
+                @conf["master_check_script_path"], 
                 "30s", 
                 "60s"
             )
         end
 
+        @logger.debug("Calling @consul.register_check_script (common)")
         #Common check registration
         @consul.register_check_script(
-            "#{@config["service_name"]}-#{node_name}-check", 
-            "#{@config["service_name"]}",
-            "#{@config["service_name"]}-#{node_name}", 
-            @config["check_script_path"], 
+            "#{@conf["service_name"]}-#{node_name}-check", 
+            "#{@conf["service_name"]}",
+            "#{@conf["service_name"]}-#{node_name}", 
+            @conf["check_script_path"], 
             "30s", 
             "60s"
         )

@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
 class Poll
-
+        require 'logger'
 	require 'redborder-consul-connector'
 
-	def initialize(master_key = "postgresql/master", master_ttl = "60s"
+	def initialize(master_key = "postgresql/master", master_ttl = "60s",
 			service_name = "postgresql", master_service_name = "postgresql-master")
 		@consul = RedborderConsulConnector.new
 		@master_key = master_key
@@ -13,6 +13,8 @@ class Poll
 		@master_service_name = master_service_name
 		@node_name = @consul.get_self()["Config"]["NodeName"]
 		@current_master = ""
+                @logger = Logger.new(STDOUT)
+                @logger.level = Logger::DEBUG
 	end
 
 	################
@@ -20,8 +22,10 @@ class Poll
 	################
 
 	def polling_process(interval)
-		@current_master = @consul.get_current_master
+		@current_master = get_current_master
+                @logger.debug("Current master is #{@current_master}...")
 		while true
+                       @logger.debug("Looping..")
 			psql_checks
 			kv_checks
 			sleep interval
@@ -29,11 +33,15 @@ class Poll
 	end	
 
 	def psql_checks()
+                @logger.debug("Calling psql_checks..")
 		stop = false
 		if @consul.leader? @master_key
+                        @logger.debug("Im the leader..")
 			if psql_check_status and psql_master_check_status
+                                @logger.debug("Updating session ttl because the check is ok and the master check also..")
 				update_session_ttl
 			else
+                                @logger.debug("Deleting master kv..")
 				delete_master_kv
 				stop = true
 			end
@@ -43,7 +51,12 @@ class Poll
 		stop_services if stop
 	end
 
+        def master?
+          return @consul.leader?(@master_key)
+        end
+
 	def kv_checks()
+                @logger.debug("Calling kv_checks..")
 		if get_current_master != @current_master
 			master_election
 			if master?
@@ -59,15 +72,19 @@ class Poll
 	####################################################################
 	
 	def psql_check_status()
+                @logger.debug("Calling @consul.get_agent_checks with #{get_pg_check_id()}")
 		result = false
 		check = @consul.get_agent_checks[get_pg_check_id()]
+                @logger.debug("psql_check_status is #{check}")
 		result = true if !check.nil? and check["Status"] == "passing"
 		return result
 	end
 
 	def psql_master_check_status()
+                @logger.debug("Calling @consul.get_agent_checks with #{get_pg_master_check_id()}")
 		result = false
 		check = @consul.get_agent_checks[get_pg_master_check_id()]
+                @logger.debug("psql_master_check_status is #{check}")
 		result = true if !check.nil? and check["Status"] == "passing"
 		return result
 	end
