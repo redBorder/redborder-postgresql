@@ -23,9 +23,9 @@ class Poll
 
 	def polling_process(interval)
 		@current_master = get_current_master
-                @logger.debug("Current master is #{@current_master}...")
+        @logger.debug("Current master is #{@current_master}...")
 		while true
-                       @logger.debug("Looping..")
+            @logger.debug("Looping..")
 			psql_checks
 			kv_checks
 			sleep interval
@@ -33,15 +33,15 @@ class Poll
 	end	
 
 	def psql_checks()
-                @logger.debug("Calling psql_checks..")
+        @logger.debug("Calling psql_checks..")
 		stop = false
 		if @consul.leader? @master_key
-                        @logger.debug("Im the leader..")
+            @logger.debug("Im the leader..")
 			if psql_check_status and psql_master_check_status
-                                @logger.debug("Updating session ttl because the check is ok and the master check also..")
+                @logger.debug("Updating session ttl because the check is ok and the master check also..")
 				update_session_ttl
 			else
-                                @logger.debug("Deleting master kv..")
+                @logger.debug("Deleting master kv..")
 				delete_master_kv
 				stop = true
 			end
@@ -56,13 +56,15 @@ class Poll
         end
 
 	def kv_checks()
-                @logger.debug("Calling kv_checks..")
+        @logger.debug("Calling kv_checks..")
 		if get_current_master != @current_master
-			master_election
-			if master?
-				master_promotion
-			else
-				resync_with_master
+			if master_election	
+				@current_master = get_current_master
+				if master?
+					master_promotion
+				else
+					resync_with_master
+				end
 			end
 		end		
 	end
