@@ -50,7 +50,7 @@ class Poll
 		elsif !psql_check_status
 			stop = true
 		end
-		stop_services if stop
+		#stop_services if stop
 	end
 
         def master?
