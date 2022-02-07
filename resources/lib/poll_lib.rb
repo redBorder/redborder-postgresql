@@ -153,7 +153,7 @@ class Poll
 			sleep 10
 		end
 		#Resync with new master
-		system("/usr/lib/redborder/bin/rb_sync_from_master.sh")
+		system("/usr/lib/redborder/bin/rb_sync_from_master.sh #{@current_key}")
 		
 	end
 
