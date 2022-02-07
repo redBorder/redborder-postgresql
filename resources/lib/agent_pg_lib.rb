@@ -144,7 +144,9 @@ class AgentPG
     end
 
     def pollchecks
-        poller = Poll.new
+        poller = Poll.new(@conf["master_kv"], @conf["master_ttl"],
+                          @conf["service_name"], @conf["master_service_key"],
+                          @conf["check_script_path"], @conf["master_check_script_path"])
         poller.polling_process(60)
     end
 

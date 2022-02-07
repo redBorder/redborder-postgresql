@@ -5,7 +5,8 @@ class Poll
 	require 'redborder-consul-connector'
 
 	def initialize(master_key = "postgresql/master", master_ttl = "60s",
-			service_name = "postgresql", master_service_name = "postgresql-master")
+			service_name = "postgresql", master_service_name = "postgresql-master",
+			check_script_path = "/usr/lib/redborder/bin/pg_health_check.sh", master_check_script_path = "/usr/lib/redborder/bin/pg_master_health_check.sh")
 		@consul = RedborderConsulConnector.new
 		@master_key = master_key
 		@master_ttl = master_ttl
@@ -13,8 +14,8 @@ class Poll
 		@master_service_name = master_service_name
 		@node_name = @consul.get_self()["Config"]["NodeName"]
 		@current_master = ""
-                @logger = Logger.new(STDOUT)
-                @logger.level = Logger::DEBUG
+        @logger = Logger.new(STDOUT)
+        @logger.level = Logger::DEBUG
 	end
 
 	################
@@ -22,7 +23,8 @@ class Poll
 	################
 
 	def polling_process(interval)
-		@current_master = get_current_master
+		#@current_master = get_current_master
+		checks_registration
         @logger.debug("Current master is #{@current_master}...")
 		while true
             @logger.debug("Looping..")
@@ -57,15 +59,15 @@ class Poll
 
 	def kv_checks()
         @logger.debug("Calling kv_checks..")
-		if get_current_master != @current_master
-			if master_election	
-				@current_master = get_current_master
-				if master?
-					master_promotion
-				else
-					resync_with_master
-				end
+		if (get_current_master != @current_master) or get_current_master.nil?
+			master_election	
+			@current_master = get_current_master
+			if master?
+			  master_promotion
+			else
+			  resync_with_master
 			end
+			checks_registration
 		end		
 	end
 
@@ -73,6 +75,36 @@ class Poll
 	# UTIL METHODS
 	####################################################################
 	
+	def checks_registration       
+        @logger.debug("Calling checks_registration, node_name is #{@node_name}")
+        #Master check registration
+        if master?
+            @logger.debug("Calling @consul.register_check_script (master)")
+            # params: id,name, service_id, script_path, interval, deregister_ttl
+            @consul.register_check_script(
+                "#{@master_service_name}-#{@node_name}-check", 
+                "#{@master_service_name}",
+                "#{@service_name}-#{@node_name}", 
+                @master_check_script_path, 
+                "30s", 
+                "60s"
+            )
+		else
+			@consul.deregister_check_script("#{@master_service_name}-#{@node_name}-check")
+        end
+
+        @logger.debug("Calling @consul.register_check_script (common)")
+        #Common check registration
+        @consul.register_check_script(
+            "#{@service_name}-#{@node_name}-check", 
+            "#{@service_name}",
+            "#{@service_name}-#{@node_name}", 
+            @check_script_path, 
+            "30s", 
+            "60s"
+        )
+    end
+
 	def psql_check_status()
                 @logger.debug("Calling @consul.get_agent_checks with #{get_pg_check_id()}")
 		result = false
