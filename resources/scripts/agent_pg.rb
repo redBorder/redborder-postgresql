@@ -13,20 +13,20 @@ require '/usr/lib/redborder/lib/poll_lib.rb'
 
 #TODO: get CONFFILE path from stdin
 if ARGV[0].nil? 
-	conf_file = "/etc/redborder/agent_pg.yml"
+  conf_file = "/etc/redborder/agent_pg.yml"
 else
-	conf_file = ARGV[0]
+  conf_file = ARGV[0]
 end
 
 agent = AgentPG.new
 
 begin
-	agent.config_from_yaml(conf_file)
-	agent.master_bootstrap
-	agent.consul_connect
-	agent.slave_bootstrap if !agent.master?
-	#agent.checks_registration
-	agent.pollchecks
+  agent.config_from_yaml(conf_file)
+  agent.master_bootstrap
+  agent.consul_connect
+  agent.slave_bootstrap if !agent.master?
+  #agent.checks_registration
+  agent.pollchecks
 rescue 
 
 ensure
