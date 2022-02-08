@@ -27,9 +27,9 @@ class Poll
 	def polling_process(interval)
 		#@current_master = get_current_master
 		checks_registration
-        @logger.debug("Current master is #{@current_master}...")
+                @logger.debug("Current master is #{@current_master}...")
 		while true
-            @logger.debug("Looping..")
+                        @logger.debug("Looping..")
 			psql_checks
 			kv_checks
 			sleep interval
@@ -37,15 +37,15 @@ class Poll
 	end	
 
 	def psql_checks()
-        @logger.debug("Calling psql_checks..")
+                @logger.debug("Calling psql_checks..")
 		stop = false
 		if @consul.leader? @master_key
-            @logger.debug("Im the leader..")
-			if psql_check_status and psql_master_check_status
-                @logger.debug("Updating session ttl because the check is ok and the master check also..")
+                        @logger.debug("Im the leader..")
+	  		if psql_check_status and psql_master_check_status
+                                @logger.debug("Updating session ttl because the check is ok and the master check also..")
 				update_session_ttl
 			else
-                @logger.debug("Deleting master kv..")
+                        @logger.debug("Deleting master kv..")
 				delete_master_kv
 				stop = true
 			end
@@ -78,9 +78,9 @@ class Poll
 	####################################################################
 	
 	def checks_registration       
-        @logger.debug("Calling checks_registration, node_name is #{@node_name}")
-        #Master check registration
-        if master?
+          @logger.debug("Calling checks_registration, node_name is #{@node_name}")
+          #Master check registration
+          if master?
             @logger.debug("Calling @consul.register_check_script (master)")
             # params: id,name, service_id, script_path, interval, deregister_ttl
             @consul.register_check_script(
@@ -91,21 +91,22 @@ class Poll
                 "30s", 
                 "60s"
             )
-		else
-			@consul.deregister_check_script("#{@master_service_name}-#{@node_name}-check")
-        end
+          else
+            @consul.deregister_check_script("#{@master_service_name}-#{@node_name}-check")
+          end
 
-        @logger.debug("Calling @consul.register_check_script (common)")
-        #Common check registration
-        @consul.register_check_script(
+          @logger.debug("Calling @consul.register_check_script (common)")
+          #Common check registration
+          @consul.register_check_script(
             "#{@service_name}-#{@node_name}-check", 
             "#{@service_name}",
             "#{@service_name}-#{@node_name}", 
             @check_script_path, 
             "30s", 
             "60s"
-        )
-    end
+          )
+          sleep 30
+        end
 
 	def psql_check_status()
                 @logger.debug("Calling @consul.get_agent_checks with #{get_pg_check_id()}")
