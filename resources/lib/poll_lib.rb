@@ -18,7 +18,7 @@ class Poll
     @node_name = @consul.get_self()["Config"]["NodeName"]
     @current_master = ""
     @check_script_path = check_script_path
-    @master_checK_script_path = master_check_script_path
+    @master_check_script_path = master_check_script_path
     @logger = Logger.new(STDOUT)
     @logger.level = Logger::DEBUG
   end
