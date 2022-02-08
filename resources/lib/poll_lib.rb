@@ -120,15 +120,16 @@ class Poll
     return result
   end
 
+  
   def psql_master_check_status()
-    @logger.debug("Calling @consul.get_agent_checks with #{get_pg_master_check_id()}")
+    @logger.debug("Calling @consul.get_node_check_health with #{get_current_master()} and #{get_pg_master_check_id()}")
     result = false
-    check = @consul.get_agent_checks[get_pg_master_check_id()]
+    check = @consul.get_node_check_health(get_current_master(), get_pg_master_check_id())
     @logger.debug("psql_master_check_status is #{check}")
-    result = true if !check.nil? and check["Status"] == "passing"
+    result = true if !check.nil? and check.first and check.first["Status"] == "passing"
     return result
   end
-
+  
   def update_session_ttl()
     return @consul.renew_session(@consul.get_kv_session_id(@master_key))
   end
@@ -167,7 +168,7 @@ class Poll
   end
 
   def get_pg_master_check_id()
-    return "#{@master_service_name}-#{@node_name}-check"
+    return "#{@master_service_name}-#{@current_master}-check"
   end
 
   def delete_master_service()
