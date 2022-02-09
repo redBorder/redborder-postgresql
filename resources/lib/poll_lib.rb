@@ -112,7 +112,7 @@ class Poll
   end
 
   def psql_check_status()
-                @logger.debug("Calling @consul.get_agent_checks with #{get_pg_check_id()}")
+    @logger.debug("Calling @consul.get_agent_checks with #{get_pg_check_id()}")
     result = false
     check = @consul.get_agent_checks[get_pg_check_id()]
     @logger.debug("psql_check_status is #{check}")
@@ -120,7 +120,10 @@ class Poll
     return result
   end
 
-  
+ 
+  #
+  # This method will get the actual master status even if the master is not the actual node
+  # 
   def psql_master_check_status()
     @logger.debug("Calling @consul.get_node_check_health with #{get_current_master()} and #{get_pg_master_check_id()}")
     result = false
@@ -175,18 +178,45 @@ class Poll
     
   end
 
+  # Deletes "master" tag for all
+  #def delete_master_tag()
+  #  services = @consul.get_services_with_tag(@service_name, "master")
+  #  services.each do |sv|
+  #    @consul.register_agent_service(sv["ServiceName"],sv["ServiceID"], sv["ServiceAddress"], sv["ServicePort"])
+  #  end
+  #end
+
+  def remove_master_tag()
+    service = @consul.get_service(get_pg_service_id)
+    return if service.empty?
+    @consul.register_agent_service(sv["Service"],sv["ID"], sv["Address"], sv["Port"])
+  end
+
+  # Add master tag by re-registering with "master" tag
+  def add_master_tag()
+    service = @consul.get_service(get_pg_service_id)
+    return if service.empty?
+    @consul.register_agent_service(sv["Service"],sv["ID"], sv["Address"], sv["Port"], ["master"])
+  end
+
   def master_promotion()
     #TODO
     #Delete master service (catalog)
-    #Register new master service (agent)
-    #Register check for master service
-    #promotion psql   
+    #delete_mater_tag
 
+    #Register new master service (agent)
+    add_master_tag
+
+    #Register check for master service
+    checks_registration
+
+    #promotion psql   
     system("touch /tmp/postgresql.trigger")
   end
 
   def resync_with_master()
     #TODO
+    remove_master_tag
     #Wait master to be ok
     while !psql_master_check_status
       sleep 10
