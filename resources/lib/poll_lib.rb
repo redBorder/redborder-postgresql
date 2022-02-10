@@ -28,6 +28,7 @@ class Poll
   ################
 
   def polling_process(interval)
+    wait_for_service_registration
     checks_registration
     while true
       @logger.debug("Looping..")
@@ -126,7 +127,24 @@ class Poll
     
   end
 
-  def checks_registration     
+  def wait_for_service_registration(sleep_time = 10)
+    while !check_service_registered
+      sleep sleep_time
+    end
+  end
+
+  def check_service_registered
+    register = true
+		begin
+			register = !@consul.get_service(get_pg_service_id).empty?
+		rescue
+			register = false
+		end
+		return register
+  end
+
+  def checks_registration    
+    return unless check_service_registered
     @logger.debug("Calling checks_registration, node_name is #{@node_name}")
     #Master check registration
     if master?
@@ -192,7 +210,7 @@ class Poll
     #TODO
     #Delete master service (catalog)
     #Register new master service (agent)
-	add_master_tag
+	  add_master_tag
     #Register check for master service
     #promotion psql   
     system("touch /tmp/postgresql.trigger")
