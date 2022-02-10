@@ -48,6 +48,7 @@ class Poll
       else
         @logger.debug("Deleting master kv..")
         delete_master_kv
+		delete_master_tag
         checks_registration
         stop = true
       end
@@ -172,17 +173,34 @@ class Poll
     return (!check.nil? and check.first and check.first["Status"] == "passing") ? true : false
   end
 
+  # Deletes "master" tag for all
+  def delete_master_tag()
+	service = @consul.get_service(get_pg_service_id)
+    return if service.empty?
+    @consul.register_agent_service(service["Service"], service["ID"], service["Address"], service["Port"])
+  end
+
+  # Add master tag by re-registering with "master" tag
+  def add_master_tag()
+    service = @consul.get_service(get_pg_service_id)
+    return if service.empty?
+    @consul.register_agent_service(service["Service"],service["ID"], service["Address"], service["Port"], ["master"])
+  end
+
+
   def master_promotion()
     #TODO
     #Delete master service (catalog)
     #Register new master service (agent)
+	add_master_tag
     #Register check for master service
     #promotion psql   
     system("touch /tmp/postgresql.trigger")
   end
 
   def resync_with_master()
-    #Wait master to be ok
+	delete_master_tag
+	#Wait master to be ok
     while !psql_master_check_status
       sleep 10
     end

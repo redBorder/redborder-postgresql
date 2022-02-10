@@ -25,7 +25,6 @@ begin
   agent.master_bootstrap
   agent.consul_connect
   agent.slave_bootstrap if !agent.master?
-  #agent.checks_registration
   agent.pollchecks
 rescue 
 
