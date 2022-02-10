@@ -66,7 +66,6 @@ class AgentPG
     if @conf["bootstrap"]
         #TODO!!!
         #system("systemctl postgresql start")
-
     end
   end
 
@@ -82,63 +81,13 @@ class AgentPG
 
   def consul_connect
     @logger.debug("Execute consul_connect")
-
     @logger.debug("Waiting for consul connectivity...")        
     @consul.wait_for_connectivity
-
-    need_to_exit = false
-    until need_to_exit
-      if @consul.get_kv_value(@conf["master_kv"]).nil?
-        @logger.debug("There is no master key...")        
-        if @conf["bootstrap"]
-          @logger.debug("Bootstrap is true so lets leader election...")        
-          election_result = @consul.leader_election(@conf["master_kv"], @conf["master_ttl"])
-          @logger.debug("Election result: #{election_result} with master_kv: #{@conf['master_kv']} and master_ttl: #{@conf['master_ttl']}")        
-            
-          need_to_exit = true
-        else
-          sleep 10
-        end
-      else
-        @logger.debug("There is master key so I exit...")        
-        need_to_exit = true
-      end
-    end
   end
 
   def master?
     @logger.debug("Execute master?")
     return @consul.leader?(@conf["master_kv"])
-  end
-
-  def checks_registration
-    node_name = @consul.get_self()["Config"]["NodeName"]
-    
-    @logger.debug("Calling checks_registration, node_name is #{node_name}")
-    #Master check registration
-    if master?
-      @logger.debug("Calling @consul.register_check_script (master)")
-      # params: id,name, service_id, script_path, interval, deregister_ttl
-      @consul.register_check_script(
-        "#{@conf["master_service_name"]}-#{node_name}-check", 
-        "#{@conf["master_service_name"]}",
-        "#{@conf["service_name"]}-#{node_name}", 
-        @conf["master_check_script_path"], 
-        "30s", 
-        "60s"
-      )
-    end
-
-    @logger.debug("Calling @consul.register_check_script (common)")
-    #Common check registration
-    @consul.register_check_script(
-      "#{@conf["service_name"]}-#{node_name}-check", 
-      "#{@conf["service_name"]}",
-      "#{@conf["service_name"]}-#{node_name}", 
-      @conf["check_script_path"], 
-      "30s", 
-      "60s"
-    )
   end
 
   def pollchecks
@@ -149,21 +98,4 @@ class AgentPG
   end
 
 end #class AgentPG
-
-# Connection example to database, and executin select that only works if it is master
-#begin
-#    con = PG.connect :dbname => conf["database"], :user => conf["user"], :host => "127.0.0.1"
-#rescue PG::Error => e
-#    puts "Error connecting to PostgreSQL via localhost, user #{conf["user"]}"
-#    exit(1)
-#end
-#res = con.exec("SELECT pg_current_xlog_location();")
-
-# Check if it is slave or master with database stopped
-#if File.file?("#{conf["pgdata"]}/recovery.conf")
-#        # file recovery.conf exist, slave configuration
-#        conf["mode"]="slave"
-#else
-#        conf["mode"]="master"
-#end
 
