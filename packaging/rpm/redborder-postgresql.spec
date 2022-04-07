@@ -35,6 +35,11 @@ install -D -m 644 resources/systemd/redborder-postgresql.service %{buildroot}/us
 
 
 %pre
+getent group postgres >/dev/null || groupadd -r postgres
+getent passwd postgres >/dev/null || \
+    useradd -r -g postgres -d / -s /sbin/nologin \
+    -c "PostgreSQL Server"
+exit 0
 
 %post
 /usr/lib/redborder/bin/rb_rubywrapper.sh -c
