@@ -38,7 +38,7 @@ install -D -m 644 resources/systemd/redborder-postgresql.service %{buildroot}/us
 getent group postgres >/dev/null || groupadd -r postgres
 getent passwd postgres >/dev/null || \
     useradd -r -g postgres -d / -s /sbin/nologin \
-    -c "PostgreSQL Server"
+    -c "PostgreSQL Server" postgres
 exit 0
 
 %post
