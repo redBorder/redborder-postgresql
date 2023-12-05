@@ -55,6 +55,6 @@ systemctl daemon-reload
 
 %changelog
 * Tue Dec 05 2023 David Vanhoucke <dvanhoucke@redborder.com> - 0.0.3-1
-- first spec version
+- Add grant access script
 * Fri Feb 10 2017 Juan J. Prieto <jjprieto@redborder.com> - 0.0.1-1
 - first spec version
