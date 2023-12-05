@@ -54,5 +54,7 @@ systemctl daemon-reload
 %doc
 
 %changelog
+* Tue Dec 05 2023 David Vanhoucke <dvanhoucke@redborder.com> - 0.0.3-1
+- first spec version
 * Fri Feb 10 2017 Juan J. Prieto <jjprieto@redborder.com> - 0.0.1-1
 - first spec version
