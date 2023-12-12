@@ -214,6 +214,8 @@ class Poll
     #Register check for master service
     #promotion psql   
     system("touch /tmp/postgresql.trigger")
+    system("sed -i '/^primary_conninfo/d' /var/lib/pgsql/data/postgresql.conf")
+    system("sed -i '/^promote_trigger_file/d' /var/lib/pgsql/data/postgresql.conf")
   end
 
   def resync_with_master()
@@ -223,7 +225,8 @@ class Poll
       sleep 10
     end
     #Resync with new master
-    system("/usr/lib/redborder/bin/rb_sync_from_master.sh #{@current_master}")
+    result=system("/usr/lib/redborder/bin/rb_sync_from_master.sh #{@current_master}")
+    @current_master=nil if !result
   end
 
 end

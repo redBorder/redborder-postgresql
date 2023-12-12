@@ -22,10 +22,24 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Creating recovery.signal file"
-sudo -u postgres bash -c "touch /var/lib/pgsql/data/recovery.signal"
+echo "Creating standby.signal file"
+sudo -u postgres bash -c "touch /var/lib/pgsql/data/standby.signal"
+
+[ -f /var/lib/pgsql/data/recovery.done ] && rm -f /var/lib/pgsql/data/recovery.done
+
+sed -i '/^primary_conninfo/d' /var/lib/pgsql/data/postgresql.conf
+sed -i '/^promote_trigger_file/d' /var/lib/pgsql/data/postgresql.conf
+sed -i '/^standby_mode/d' /var/lib/pgsql/data/postgresql.conf
+sudo -u postgres bash -c "cat >> /var/lib/pgsql/data/postgresql.conf <<- _EOF1_
+#standby_mode = 'on'
+primary_conninfo = 'host=$master port=5432 user=rep application_name=$hostname'
+promote_trigger_file = '/tmp/postgresql.trigger'
+_EOF1_
+"
 
 echo "Starting PostgreSQL"
 sudo service postgresql start
 
+echo "restart webui in all nodes"
+red node execute all systemctl restart webui
 popd
