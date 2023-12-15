@@ -54,6 +54,8 @@ systemctl daemon-reload
 %doc
 
 %changelog
+* Fri Dec 15 2023 David Vanhoucke <dvanhoucke@redborder.com> - 0.0.4-1
+- Fix service HA
 * Tue Dec 05 2023 David Vanhoucke <dvanhoucke@redborder.com> - 0.0.3-1
 - Add grant access script
 * Fri Feb 10 2017 Juan J. Prieto <jjprieto@redborder.com> - 0.0.1-1
