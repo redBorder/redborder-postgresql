@@ -16,22 +16,30 @@ echo Cleaning up old cluster directory
 sudo -u postgres rm -rf /var/lib/pgsql/data
 
 echo Starting base backup as replicator
-sudo -u postgres pg_basebackup -h $master -D /var/lib/pgsql/data -U rep -v
+sudo -u postgres pg_basebackup -h $master -D /var/lib/pgsql/data -U rep -R -v
 if [ $? -ne 0 ]; then
     echo "Error detected" 
     exit 1
 fi
 
-echo Writing recovery.conf file
+echo "Creating standby.signal file"
+sudo -u postgres bash -c "touch /var/lib/pgsql/data/standby.signal"
+
 [ -f /var/lib/pgsql/data/recovery.done ] && rm -f /var/lib/pgsql/data/recovery.done
-sudo -u postgres bash -c "cat > /var/lib/pgsql/data/recovery.conf <<- _EOF1_
-  standby_mode = 'on'
-  primary_conninfo = 'host=$master port=5432 user=rep application_name=$hostname'
-  trigger_file = '/tmp/postgresql.trigger'
+
+sed -i '/^primary_conninfo/d' /var/lib/pgsql/data/postgresql.conf
+sed -i '/^promote_trigger_file/d' /var/lib/pgsql/data/postgresql.conf
+sed -i '/^standby_mode/d' /var/lib/pgsql/data/postgresql.conf
+sudo -u postgres bash -c "cat >> /var/lib/pgsql/data/postgresql.conf <<- _EOF1_
+#standby_mode = 'on'
+primary_conninfo = 'host=$master port=5432 user=rep application_name=$hostname'
+promote_trigger_file = '/tmp/postgresql.trigger'
 _EOF1_
 "
 
-echo Startging PostgreSQL
+echo "Starting PostgreSQL"
 sudo service postgresql start
 
+echo "restart webui in all nodes"
+red node execute all systemctl restart webui
 popd
