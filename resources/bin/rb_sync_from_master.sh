@@ -41,5 +41,5 @@ echo "Starting PostgreSQL"
 sudo service postgresql start
 
 echo "restart webui in all nodes"
-red node execute all systemctl restart webui
+rbcli node execute all systemctl restart webui
 popd
