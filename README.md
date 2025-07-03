@@ -1,1 +1,2 @@
 # redborder-postgresql
+On deprecation
